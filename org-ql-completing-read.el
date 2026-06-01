@@ -332,26 +332,26 @@ single predicate)."
       ;; ensuring all of the BUFFERS-FILES are loaded and initialized before calling
       ;; `completing-read'.
       (mapc #'org-ql--ensure-buffer buffers-files)
-      (let* ((completion-styles '(org-ql-completing-read))
-             (completion-styles-alist (cons (list 'org-ql-completing-read #'try #'all "Org QL Find")
-                                            completion-styles-alist))
-             (selected
-              (minibuffer-with-setup-hook
-                  (lambda ()
-                    (use-local-map (make-composed-keymap org-ql-completing-read-map (current-local-map))))
-                (cl-letf* (((symbol-function 'org-ql-completing-read-export)
-                            (lambda ()
-                              (interactive)
-                              (run-at-time 0 nil
-                                           #'org-ql-search
-                                           buffers-files
-                                           (minibuffer-contents-no-properties))
-                              (if (fboundp 'minibuffer-quit-recursive-edit)
-                                  (minibuffer-quit-recursive-edit)
-                                (abort-recursive-edit))))
-                           ((symbol-function 'embark-export)
-                            (symbol-function 'org-ql-completing-read-export)))
-                  (completing-read prompt #'collection nil t)))))
+      (let ((selected
+             (minibuffer-with-setup-hook
+                 (lambda ()
+                   (setq-local completion-styles '(org-ql-completing-read))
+                   (setq-local completion-styles-alist (cons (list 'org-ql-completing-read #'try #'all "Org QL Find")
+                                                             completion-styles-alist))
+                   (use-local-map (make-composed-keymap org-ql-completing-read-map (current-local-map))))
+               (cl-letf* (((symbol-function 'org-ql-completing-read-export)
+                           (lambda ()
+                             (interactive)
+                             (run-at-time 0 nil
+                                          #'org-ql-search
+                                          buffers-files
+                                          (minibuffer-contents-no-properties))
+                             (if (fboundp 'minibuffer-quit-recursive-edit)
+                                 (minibuffer-quit-recursive-edit)
+                               (abort-recursive-edit))))
+                          ((symbol-function 'embark-export)
+                           (symbol-function 'org-ql-completing-read-export)))
+                 (completing-read prompt #'collection nil t)))))
         ;; (debug-message "SELECTED:%S  KEYS:%S" selected (hash-table-keys table))
         (or (gethash selected table)
             ;; If there are completions in the table, but none of them exactly match the user input
